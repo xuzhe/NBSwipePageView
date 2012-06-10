@@ -28,7 +28,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     _swipePageView.visibleViewEffectBlock = ^(id obj, NSUInteger idx, BOOL *stop) {
-        *stop = YES;
+        *stop = NO;
         NBSwipePageViewSheet *page = (NBSwipePageViewSheet *)obj;
         CGFloat delta = floorf(_swipePageView.contentOffset.x - page.frame.origin.x + page.margin);
 
