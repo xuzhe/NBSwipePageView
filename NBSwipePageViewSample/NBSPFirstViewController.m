@@ -43,8 +43,8 @@
 
 - (void)viewDidUnload
 {
-    [self setSwipePageView:nil];
     _swipePageView.visibleViewEffectBlock = nil;
+    [self setSwipePageView:nil];
     
     [super viewDidUnload];
 }
