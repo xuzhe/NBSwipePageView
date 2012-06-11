@@ -624,27 +624,32 @@
     
 }
 
-- (void)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle {
+- (BOOL)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle {
+    if (![self deselectPageAtIndex:_selectedPageIndex animated:animated]) {
+        return NO;
+    }
     NSUInteger shouldSelectIndex = [self delegateWillSelectPageAtIndex:index];
     if (shouldSelectIndex == NSNotFound) {
-        return;
+        return NO;
     } else if (shouldSelectIndex != _currentPageIndex) {
         [_scrollView setContentOffset:[self contentOffsetOfIndex:shouldSelectIndex] animated:animated];
     }
     [self delegateDidSelectPageAtIndex:shouldSelectIndex];
     _selectedPageIndex = shouldSelectIndex;
+    return YES;
 }
 
-- (void)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
+- (BOOL)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
     if (index == NSNotFound) {
-        return;
+        return YES;
     }
     NSUInteger shouldDeselectIndex = [self delegateWillDeselectPageAtIndex:_selectedPageIndex];
     if (shouldDeselectIndex == NSNotFound) {
-        return;
+        return NO;
     }
     [self delegateDidDeselectPageAtIndex:_selectedPageIndex];
     _selectedPageIndex = NSNotFound;
+    return YES;
 }
 
 // TODO: Edit the page view

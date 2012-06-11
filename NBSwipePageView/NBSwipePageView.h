@@ -56,8 +56,8 @@ typedef enum {
 - (void)scrollToPageAtIndex:(NSUInteger)index animated:(BOOL)animated;
 - (NBSwipePageViewSheet *)swipePageViewSheetAtIndex:(NSUInteger)index;
 - (void)setPageViewMode:(NBSwipePageViewMode)pageViewMode animated:(BOOL)animated;
-- (void)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle;
-- (void)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated;
+- (BOOL)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle;
+- (BOOL)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated;
 
 // TODO: Edit the page view
 - (void)beginUpdates;
