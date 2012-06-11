@@ -57,7 +57,7 @@
 @end
 
 // ======================= NBSwipePageView =======================
-@interface NBSwipePageView (PrivateMethod) <UIScrollViewDelegate>
+@interface NBSwipePageView (PrivateMethod) <UIScrollViewDelegate, UIGestureRecognizerDelegate>
 
 @end
 
@@ -71,6 +71,7 @@
     NSRange _visibleRange;
     BOOL _isPendingScrolledPageUpdateNotification;
     CGFloat _cachedScaleRate;
+    NSUInteger _selectedPageIndex;
 }
 
 @synthesize delegate = _delegate;
@@ -89,6 +90,7 @@
 - (void)initCodes {
     // init settings
     _currentPageIndex = NSNotFound;
+    _selectedPageIndex = NSNotFound;
     _pageViewMode = NBSwipePageViewModePageSize;
     _allowsSelection = NO;
     _disableScrollInFullSizeMode = NO;  // defult is do NOT disable scroll in full size mode
@@ -105,7 +107,6 @@
     _scrollView.delaysContentTouches = YES;
     _scrollView.showsVerticalScrollIndicator = NO;
     _scrollView.showsHorizontalScrollIndicator = NO;
-    
     [self addSubview:_scrollView];
     
     _touchView = [[NBSwipePageTouchView alloc] initWithFrame:self.bounds];
@@ -113,6 +114,15 @@
     _touchView.autoresizingMask = _scrollView.autoresizingMask;
     [self addSubview:_touchView];
     
+    // set tap gesture recognizer for page selection
+	UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGestureHandler:)];
+	[_scrollView addGestureRecognizer:tapRecognizer];
+	tapRecognizer.delegate = self;
+    
+    UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(tapGestureHandler:)];
+    [_scrollView addGestureRecognizer:longPressRecognizer];
+    longPressRecognizer.delegate = self;
+
     // init caches
     _cachedNumberOfPages = 0;
     _visiblePages = [NSMutableArray arrayWithCapacity:4];
@@ -191,7 +201,7 @@
     if (_delegate && [_delegate respondsToSelector:@selector(swipePageView:willSelectPageAtIndex:)]) {
         return [_delegate swipePageView:self willSelectPageAtIndex:index];
     }
-    return NSNotFound;
+    return index;
 }
 
 - (void)delegateDidSelectPageAtIndex:(NSUInteger)index {
@@ -204,7 +214,7 @@
     if (_delegate && [_delegate respondsToSelector:@selector(swipePageView:willDeselectPageAtIndex:)]) {
         [_delegate swipePageView:self willDeselectPageAtIndex:index];
     }
-    return NSNotFound;
+    return index;
 }
 
 - (void)delegateDidDeselectPageAtIndex:(NSUInteger)index {
@@ -302,7 +312,7 @@
 
 - (void)setFrameForPage:(NBSwipePageViewSheet *)page atIndex:(NSInteger)index {
     page.transform = CGAffineTransformMakeScale(_cachedScaleRate, _cachedScaleRate);
-	CGFloat contentOffset = index * _scrollView.frame.size.width;
+	CGFloat contentOffset = (CGFloat)index * _scrollView.frame.size.width;
 	CGFloat margin = floorf((_scrollView.frame.size.width - page.frame.size.width) * 0.5f); 
 	CGRect frame = page.frame;
 	frame.origin.x = floorf(contentOffset + margin);
@@ -324,6 +334,15 @@
 	[_visiblePages insertObject:visiblePage atIndex:visibleIndex];
     
     return visiblePage;
+}
+
+- (CGPoint)contentOffsetOfIndex:(NSUInteger)index {
+    return CGPointMake(_scrollView.bounds.size.width * (CGFloat)index, 0.0f);
+}
+
+- (NSUInteger)indexOfCurrentContentOffset {
+    CGFloat pageWidth = _scrollView.bounds.size.width;
+    return floor((_scrollView.contentOffset.x - pageWidth * 0.5f) / pageWidth) + 1.0f;
 }
 
 - (void)preparePage:(NBSwipePageViewSheet *)page forMode:(NBSwipePageViewMode)mode {
@@ -364,11 +383,11 @@
 
 // Update Visible Pages
 - (void)updateVisiblePages {
-    CGFloat pageWidth = _scrollView.frame.size.width;
+    CGFloat pageWidth = _scrollView.bounds.size.width;
     
 	//get x origin of left- and right-most pages in _scrollView's superview coordinate space (i.e. self)  
 	CGFloat leftViewOriginX = _scrollView.frame.origin.x - _scrollView.contentOffset.x + (_visibleRange.location * pageWidth);
-	CGFloat rightViewOriginX = _scrollView.frame.origin.x - _scrollView.contentOffset.x + (_visibleRange.location + _visibleRange.length - 1) * pageWidth;
+	CGFloat rightViewOriginX = _scrollView.frame.origin.x - _scrollView.contentOffset.x + (_visibleRange.location + _visibleRange.length - 1.0) * pageWidth;
 	
 	if (leftViewOriginX > 0) {
 		//new page is entering the visible range from the left
@@ -426,6 +445,14 @@
             _isPendingScrolledPageUpdateNotification = NO;
         }
     }
+}
+
+- (NSUInteger)indexForVisiblePage:(NBSwipePageViewSheet *)page {
+	NSUInteger index = [_visiblePages indexOfObject:page];
+	if (index != NSNotFound) {
+        return _visibleRange.location + index;
+    }
+    return NSNotFound;
 }
 
 #pragma mark - Set Views
@@ -527,22 +554,36 @@
         *stop = NO;
     }];
 
-    _cachedScaleRate = [self delegateScaleOfSmallViewMode];
-    CGRect frame = _scrollView.frame;
-    CGFloat width = self.bounds.size.width * _cachedScaleRate;
-    width += (self.bounds.size.width - width) * 0.25;
-    frame.size.width = ceilf(width);
-    frame.size.height = ceilf(self.bounds.size.height * _cachedScaleRate);
-    frame.origin.x = floorf((self.bounds.size.width - frame.size.width) * 0.5);
-    frame.origin.y = floorf((self.bounds.size.height - frame.size.height) * 0.5);
-    _scrollView.frame = frame;
+    if (_pageViewMode == NBSwipePageViewModePageSize) {
+        _cachedScaleRate = [self delegateScaleOfSmallViewMode];
+        CGRect frame = _scrollView.frame;
+        CGFloat width = self.bounds.size.width * _cachedScaleRate;
+        width += (self.bounds.size.width - width) * 0.25;
+        frame.size.width = ceilf(width);
+        frame.size.height = ceilf(self.bounds.size.height * _cachedScaleRate);
+        frame.origin.x = floorf((self.bounds.size.width - frame.size.width) * 0.5);
+        frame.origin.y = floorf((self.bounds.size.height - frame.size.height) * 0.5);
+        _scrollView.frame = frame;
+    } else {
+        _cachedScaleRate = 1.0f;
+        CGRect frame = _scrollView.frame;
+        CGFloat width = self.bounds.size.width * _cachedScaleRate;
+        width += (self.bounds.size.width - width) * 0.25;
+        frame.size.width = ceilf(width);
+        frame.size.height = ceilf(self.bounds.size.height * _cachedScaleRate);
+        frame.origin.x = floorf((self.bounds.size.width - frame.size.width) * 0.5);
+        frame.origin.y = floorf((self.bounds.size.height - frame.size.height) * 0.5);
+        _scrollView.frame = frame;
+    }
 
     [self dataSourceLoadNumberOfPages];
-
+    _selectedPageIndex = NSNotFound;
     if (_cachedNumberOfPages == 0 || _cachedNumberOfPages == NSNotFound) {
+        _currentPage = nil;
+        _currentPageIndex = NSNotFound;
         return;
     }
-        
+    
     [self updateVisibleRange:_currentPageIndex];
     
     // reload visible pages
@@ -563,7 +604,7 @@
 //        _viewMode = HGPageScrollViewModeDeck;
 //        [self setViewMode:HGPageScrollViewModePage animated:NO];
 //    }
-    if (_pageViewMode == NBSwipePageViewModePageSize && _visibleViewEffectBlock) {
+    if (_visibleViewEffectBlock) {
         [_visiblePages enumerateObjectsUsingBlock:_visibleViewEffectBlock];
     }
 }
@@ -573,7 +614,10 @@
 }
 
 - (NBSwipePageViewSheet *)swipePageViewSheetAtIndex:(NSUInteger)index {
-    
+    if (NSLocationInRange(index, _visibleRange)) {
+        return [_visiblePages objectAtIndex:index - _visibleRange.location];
+    }
+    return [self dataSourceSheetForPageAtIndex:index];
 }
 
 - (void)setPageViewMode:(NBSwipePageViewMode)pageViewMode animated:(BOOL)animated {
@@ -581,11 +625,26 @@
 }
 
 - (void)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle {
-    
+    NSUInteger shouldSelectIndex = [self delegateWillSelectPageAtIndex:index];
+    if (shouldSelectIndex == NSNotFound) {
+        return;
+    } else if (shouldSelectIndex != _currentPageIndex) {
+        [_scrollView setContentOffset:[self contentOffsetOfIndex:shouldSelectIndex] animated:animated];
+    }
+    [self delegateDidSelectPageAtIndex:shouldSelectIndex];
+    _selectedPageIndex = shouldSelectIndex;
 }
 
 - (void)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
-    
+    if (index == NSNotFound) {
+        return;
+    }
+    NSUInteger shouldDeselectIndex = [self delegateWillDeselectPageAtIndex:_selectedPageIndex];
+    if (shouldDeselectIndex == NSNotFound) {
+        return;
+    }
+    [self delegateDidDeselectPageAtIndex:_selectedPageIndex];
+    _selectedPageIndex = NSNotFound;
 }
 
 // TODO: Edit the page view
@@ -612,11 +671,10 @@
 #pragma mark - UIScrollViewDelegate
 
 - (void)setCurrentPageIndexOfScrollView:(UIScrollView *)scrollView {
-    CGFloat pageWidth = scrollView.frame.size.width;
-    _currentPageIndex = floor((scrollView.contentOffset.x - pageWidth / 2) / pageWidth) + 1;
+    _currentPageIndex = [self indexOfCurrentContentOffset];
     if (_delegate) {
         CGFloat delta = scrollView.contentOffset.x - _currentPage.frame.origin.x;
-        BOOL toggleNextItem = (fabs(delta) > scrollView.frame.size.width / 2);
+        BOOL toggleNextItem = (fabs(delta) > scrollView.frame.size.width * 0.5);
         if (toggleNextItem && [_visiblePages count] > 1) {
             
             NSInteger selectedIndex = [_visiblePages indexOfObject:_currentPage];
@@ -647,12 +705,12 @@
 }
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView {
-//    [self setCurrentPageIndexOfScrollView:scrollView];
+    [self setCurrentPageIndexOfScrollView:scrollView];
 }
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
     if (!decelerate) {
-//        [self setCurrentPageIndexOfScrollView:scrollView];
+        [self setCurrentPageIndexOfScrollView:scrollView];
         if (_isPendingScrolledPageUpdateNotification) {
             [self delegateDidScrollToPageAtIndex:_currentPageIndex animated:NO];
             _isPendingScrolledPageUpdateNotification = NO;
@@ -661,7 +719,7 @@
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
-    //    [self setCurrentPageIndexOfScrollView:scrollView];
+        [self setCurrentPageIndexOfScrollView:scrollView];
     [self delegateDidScrollToPageAtIndex:_currentPageIndex animated:NO];
     _isPendingScrolledPageUpdateNotification = NO;
 }
@@ -685,6 +743,35 @@
 
 - (BOOL)decelerating {
     return _scrollView.decelerating;
+}
+
+
+#pragma mark -
+#pragma mark Handling Touches
+
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+	if (_pageViewMode == NBSwipePageViewModePageSize && !_scrollView.decelerating && !_scrollView.dragging) {
+		return YES;	
+	}
+	return NO;	
+}
+
+
+- (void)tapGestureHandler:(UITapGestureRecognizer *)recognizer  {
+    if (_currentPageIndex == NSNotFound) {
+        return;
+    }
+    if (recognizer.state == UIGestureRecognizerStateBegan) {
+        [self deselectPageAtIndex:_selectedPageIndex animated:YES];
+    } else if (recognizer.state == UIGestureRecognizerStateRecognized) {
+        for (NBSwipePageViewSheet *page in _visiblePages) {
+            if ([page pointInside:[recognizer locationInView:page] withEvent:nil]) {
+                [self selectPageAtIndex:[self indexForVisiblePage:page] animated:YES scrollToMiddle:YES];
+                return;
+            }
+        }
+    }
 }
 
 @end
