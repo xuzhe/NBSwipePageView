@@ -621,7 +621,8 @@
 }
 
 - (void)setPageViewMode:(NBSwipePageViewMode)pageViewMode animated:(BOOL)animated {
-    
+    _pageViewMode = pageViewMode;
+    // TODO: add animated support
 }
 
 - (BOOL)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle {
