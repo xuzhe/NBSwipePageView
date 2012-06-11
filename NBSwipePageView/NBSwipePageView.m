@@ -604,7 +604,7 @@
 //        _viewMode = HGPageScrollViewModeDeck;
 //        [self setViewMode:HGPageScrollViewModePage animated:NO];
 //    }
-    if (_visibleViewEffectBlock) {
+    if (_pageViewMode == NBSwipePageViewModePageSize && _visibleViewEffectBlock) {
         [_visiblePages enumerateObjectsUsingBlock:_visibleViewEffectBlock];
     }
 }
@@ -700,7 +700,7 @@
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     [self updateVisiblePages];
     
-    if (_visibleViewEffectBlock) {
+    if (_pageViewMode == NBSwipePageViewModePageSize && _visibleViewEffectBlock) {
         [_visiblePages enumerateObjectsUsingBlock:_visibleViewEffectBlock];
     }
     
@@ -754,14 +754,12 @@
 #pragma mark -
 #pragma mark Handling Touches
 
-
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
 	if (_pageViewMode == NBSwipePageViewModePageSize && !_scrollView.decelerating && !_scrollView.dragging) {
 		return YES;	
 	}
 	return NO;	
 }
-
 
 - (void)tapGestureHandler:(UITapGestureRecognizer *)recognizer  {
     if (_currentPageIndex == NSNotFound) {
