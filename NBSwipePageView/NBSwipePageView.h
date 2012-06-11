@@ -86,7 +86,7 @@ typedef enum {
 // This delegate is called when the scrollView scrolled.
 - (void)swipePageViewDidScroll:(NBSwipePageView *)swipePageView;
 
-- (CGFloat)scaleOfSmallViewModeForSwipePageView:(NBSwipePageView *)swipePageView;  // default is 80%
+- (CGFloat)scaleOfSmallViewModeForSwipePageView:(NBSwipePageView *)swipePageView;  // default is 60%
 
 - (NSUInteger)swipePageView:(NBSwipePageView *)swipePageView willSelectPageAtIndex:(NSUInteger)index;
 - (void)swipePageView:(NBSwipePageView *)swipePageView didSelectPageAtIndex:(NSUInteger)index;
