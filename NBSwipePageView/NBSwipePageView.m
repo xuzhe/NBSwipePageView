@@ -791,18 +791,38 @@
     return _scrollView.contentInset;
 }
 
+- (BOOL)pagingEnabled {
+    return _scrollView.pagingEnabled;
+}
+
+- (BOOL)scrollEnabled {
+    return _scrollView.scrollEnabled;
+}
+
 - (void)setContentInset:(UIEdgeInsets)contentInset {
     _scrollView.contentInset = contentInset;
 }
 
+- (void)setContentOffset:(CGPoint)contentOffset {
+    _scrollView.contentOffset = contentOffset;
+}
+
+- (void)setContentSize:(CGSize)contentSize {
+    _scrollView.contentSize = contentSize;
+}
+
+- (void)setPagingEnabled:(BOOL)pagingEnabled {
+    _scrollView.pagingEnabled = pagingEnabled;
+}
+
+- (void)setScrollEnabled:(BOOL)scrollEnabled {
+    _scrollView.scrollEnabled = scrollEnabled;
+}
 
 #pragma mark -
 #pragma mark Handling Touches
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
-    if (_scrollViewAnimating) {
-        NSLog(@"fucked!!!!!!!!!!!!!!!!!");
-    }
 	if (_pageViewMode == NBSwipePageViewModePageSize && !_scrollView.decelerating && !_scrollView.dragging && !_scrollViewAnimating) {
 		return YES;	
 	}

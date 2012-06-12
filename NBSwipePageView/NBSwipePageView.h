@@ -34,7 +34,6 @@ typedef enum {
 @property (unsafe_unretained, nonatomic) IBOutlet id<NBSwipePageViewDataSource> dataSource;
 
 @property (readonly, nonatomic) NSUInteger currentPageIndex;
-@property (assign, nonatomic) UIEdgeInsets contentInset;
 @property (assign, nonatomic) CGSize scaleScrollView;
 @property (assign, nonatomic) NBSwipePageViewMode pageViewMode;
 @property (assign, nonatomic) BOOL allowsSelection;
@@ -46,11 +45,14 @@ typedef enum {
 @property (strong, nonatomic) void (^visibleViewEffectBlock)(id obj, NSUInteger idx, BOOL *stop);
 
 // UIScrollViews's property
-@property (readonly, nonatomic) CGPoint contentOffset;
-@property (readonly, nonatomic) CGSize contentSize;
-@property (readonly, nonatomic) BOOL dragging;
-@property (readonly, nonatomic) BOOL tracking;
-@property (readonly, nonatomic) BOOL decelerating;
+@property (assign, nonatomic) UIEdgeInsets contentInset;
+@property (assign, nonatomic) CGPoint contentOffset;
+@property (assign, nonatomic) CGSize contentSize;
+@property (assign, nonatomic) BOOL pagingEnabled;
+@property (assign, nonatomic) BOOL scrollEnabled;
+@property (readonly, assign, nonatomic) BOOL dragging;
+@property (readonly, assign, nonatomic) BOOL tracking;
+@property (readonly, assign, nonatomic) BOOL decelerating;
 
 // Reload all pages. Always call this method after Data Source is changed.
 - (NBSwipePageViewSheet *)dequeueReusableCellWithIdentifier:(NSString *)reuseIdentifier;
