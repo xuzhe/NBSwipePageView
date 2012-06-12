@@ -111,6 +111,7 @@
     _scrollView.delaysContentTouches = YES;
     _scrollView.showsVerticalScrollIndicator = NO;
     _scrollView.showsHorizontalScrollIndicator = NO;
+    _scrollView.alwaysBounceHorizontal = YES;
     [self addSubview:_scrollView];
     
     _touchView = [[NBSwipePageTouchView alloc] initWithFrame:self.bounds];
@@ -315,6 +316,11 @@
         frame.origin.x = _scrollView.contentSize.width + self.bounds.size.width - CGRectGetMaxX(_scrollView.frame);
         _pageTailView.frame = frame;
     }
+    if (_pageHeaderView) {
+        CGRect frame = _pageHeaderView.frame;
+        frame.origin.x = -frame.size.width - CGRectGetMinX(_scrollView.frame);
+        _pageHeaderView.frame = frame;
+    }
 }
 
 - (void)setFrameForPage:(NBSwipePageViewSheet *)page atIndex:(NSInteger)index {
@@ -465,16 +471,17 @@
     _currentPageIndex = [self indexOfCurrentContentOffset];
     CGFloat delta = scrollView.contentOffset.x - _currentPage.frame.origin.x + _currentPage.margin;
     BOOL toggleNextItem = (fabs(delta) > scrollView.frame.size.width * 0.5);
+
     if (toggleNextItem && [_visiblePages count] > 1) {
-        
-        NSInteger selectedIndex = [_visiblePages indexOfObject:_currentPage];
-        BOOL neighborExists = ((delta < 0 && selectedIndex > 0) || (delta > 0 && selectedIndex < [_visiblePages count]-1));
-        
+        NSUInteger selectedIndex = [_visiblePages indexOfObject:_currentPage];
+        BOOL neighborExists = (selectedIndex != NSNotFound && ((delta < 0 && selectedIndex > 0) || (delta > 0 && selectedIndex < [_visiblePages count] - 1)));
         if (neighborExists) {
-            NSInteger neighborPageVisibleIndex = [_visiblePages indexOfObject:_currentPage] + (delta > 0 ? 1 : -1);
+            NSInteger neighborPageVisibleIndex = selectedIndex + (delta > 0.0f ? 1 : -1);
+            if (neighborExists >= [_visiblePages count]) {
+                return;
+            }
             NBSwipePageViewSheet *neighborPage = [_visiblePages objectAtIndex:neighborPageVisibleIndex];
             NSInteger neighborIndex = _visibleRange.location + neighborPageVisibleIndex;
-            
             [self updateScrolledPage:neighborPage index:neighborIndex animated:animated];
         }
     }
@@ -505,9 +512,6 @@
     _pageHeaderView = pageHeaderView;
     if (pageHeaderView) {
         [_scrollView addSubview:pageHeaderView];
-        CGRect frame = pageHeaderView.frame;
-        frame.origin.x = -frame.size.width - CGRectGetMinX(_scrollView.frame);
-        pageHeaderView.frame = frame;
     }
 }
 
@@ -521,9 +525,6 @@
     _pageTailView = pageTailView;
     if (pageTailView) {
         [_scrollView addSubview:pageTailView];
-        CGRect frame = pageTailView.frame;
-        frame.origin.x = _scrollView.contentSize.width + self.bounds.size.width - CGRectGetMaxX(_scrollView.frame);
-        pageTailView.frame = frame;
     }
 }
 
