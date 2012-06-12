@@ -166,7 +166,7 @@
 
 - (void)setFrame:(CGRect)frame {
     [super setFrame:frame];
-	_scrollView.contentSize = CGSizeMake((CGFloat)_cachedNumberOfPages * _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+    [self updateContentSize];
 }
 
 #pragma mark - Delegate Sender
@@ -185,12 +185,6 @@
 - (void)delegateDidCancelScrollFromPageAtIndex:(NSUInteger)index {
     if (_delegate && [_delegate respondsToSelector:@selector(swipePageView:didCancelScrollFromPageAtIndex:)]) {
         [_delegate swipePageView:self didCancelScrollFromPageAtIndex:index];
-    }
-}
-
-- (void)delegateDidScroll {
-    if (_delegate && [_delegate respondsToSelector:@selector(swipePageViewDidScroll:)]) {
-        [_delegate swipePageViewDidScroll:self];
     }
 }
 
@@ -275,7 +269,7 @@
         return pages;
     }
     _cachedNumberOfPages = pages;
-    _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width * (CGFloat)pages, _scrollView.bounds.size.height);
+    [self updateContentSize];
     return pages;
 }
 
@@ -313,6 +307,15 @@
 }
 
 #pragma mark - Private Logic Methods
+- (void)updateContentSize {
+    _scrollView.contentSize = CGSizeMake((CGFloat)_cachedNumberOfPages * _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+    
+    if (_pageTailView) {
+        CGRect frame = _pageTailView.frame;
+        frame.origin.x = _scrollView.contentSize.width + self.bounds.size.width - CGRectGetMaxX(_scrollView.frame);
+        _pageTailView.frame = frame;
+    }
+}
 
 - (void)setFrameForPage:(NBSwipePageViewSheet *)page atIndex:(NSInteger)index {
     page.transform = CGAffineTransformMakeScale(_cachedScaleRate, _cachedScaleRate);
@@ -458,6 +461,25 @@
     return NSNotFound;
 }
 
+- (void)setCurrentPageIndexOfScrollView:(UIScrollView *)scrollView animated:(BOOL)animated {
+    _currentPageIndex = [self indexOfCurrentContentOffset];
+    CGFloat delta = scrollView.contentOffset.x - _currentPage.frame.origin.x + _currentPage.margin;
+    BOOL toggleNextItem = (fabs(delta) > scrollView.frame.size.width * 0.5);
+    if (toggleNextItem && [_visiblePages count] > 1) {
+        
+        NSInteger selectedIndex = [_visiblePages indexOfObject:_currentPage];
+        BOOL neighborExists = ((delta < 0 && selectedIndex > 0) || (delta > 0 && selectedIndex < [_visiblePages count]-1));
+        
+        if (neighborExists) {
+            NSInteger neighborPageVisibleIndex = [_visiblePages indexOfObject:_currentPage] + (delta > 0 ? 1 : -1);
+            NBSwipePageViewSheet *neighborPage = [_visiblePages objectAtIndex:neighborPageVisibleIndex];
+            NSInteger neighborIndex = _visibleRange.location + neighborPageVisibleIndex;
+            
+            [self updateScrolledPage:neighborPage index:neighborIndex animated:animated];
+        }
+    }
+}
+
 #pragma mark - Set Views
 - (void)setBackgroundView:(UIView *)backgroundView {
     if ([backgroundView isEqual:_backgroundView]) {
@@ -481,10 +503,10 @@
         [_pageHeaderView removeFromSuperview];
     }
     _pageHeaderView = pageHeaderView;
-    if (pageHeaderView && _currentPageIndex == 0) {
+    if (pageHeaderView) {
         [_scrollView addSubview:pageHeaderView];
         CGRect frame = pageHeaderView.frame;
-        frame.origin.x = -frame.size.width;
+        frame.origin.x = -frame.size.width - CGRectGetMinX(_scrollView.frame);
         pageHeaderView.frame = frame;
     }
 }
@@ -497,10 +519,10 @@
         [_pageTailView removeFromSuperview];
     }
     _pageTailView = pageTailView;
-    if (pageTailView && _currentPageIndex == _cachedNumberOfPages - 1) {
+    if (pageTailView) {
         [_scrollView addSubview:pageTailView];
         CGRect frame = pageTailView.frame;
-        frame.origin.x = _scrollView.contentSize.width + frame.size.width;
+        frame.origin.x = _scrollView.contentSize.width + self.bounds.size.width - CGRectGetMaxX(_scrollView.frame);
         pageTailView.frame = frame;
     }
 }
@@ -538,23 +560,26 @@
 - (void)updateVisibleRange:(NSUInteger)currentIndex {
     if (currentIndex == NSNotFound || currentIndex == 0) {
         _currentPageIndex = 0;
-        _visibleRange.length = MIN(kMaxVisiblePageLength - 1, _cachedNumberOfPages);
         _visibleRange.location = 0;
+        _visibleRange.length = MIN(kMaxVisiblePageLength - 1, _cachedNumberOfPages);
     } else if (currentIndex >= _cachedNumberOfPages) {
         _currentPageIndex = _cachedNumberOfPages - 1;
-        _visibleRange.length = MIN(kMaxVisiblePageLength - 1, _cachedNumberOfPages);
         _visibleRange.location = MIN(_currentPageIndex - 1, _cachedNumberOfPages - 1);
+        _visibleRange.length = MIN(kMaxVisiblePageLength - 1, _cachedNumberOfPages);
     } else {
-        _visibleRange.length = MIN(kMaxVisiblePageLength, _cachedNumberOfPages);
         _visibleRange.location = _currentPageIndex - 1;
+        _visibleRange.length = MIN(MIN(kMaxVisiblePageLength, _cachedNumberOfPages), _cachedNumberOfPages - _visibleRange.location);
     }
 }
 
 - (void)reloadData {    
     [_visiblePages removeAllObjects];
     [[_scrollView subviews] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        [obj removeFromSuperview];
         *stop = NO;
+        if ([obj isEqual:_pageTailView] || [obj isEqual:_pageHeaderView]) {
+            return ;
+        }
+        [obj removeFromSuperview];
     }];
 
     if (_pageViewMode == NBSwipePageViewModePageSize) {
@@ -598,7 +623,7 @@
     // this will load any additional views which become visible  
     [self updateVisiblePages];
 
-    _currentPage = [_visiblePages objectAtIndex:_currentPageIndex];
+    _currentPage = [self swipePageViewSheetAtIndex:_currentPageIndex];
     // refresh the page at the selected index (it might have changed after reloading the visible pages) 
     [self updateScrolledPage:_currentPage index:_currentPageIndex animated:NO];
     
@@ -683,25 +708,6 @@
 
 #pragma mark - UIScrollViewDelegate
 
-- (void)setCurrentPageIndexOfScrollView:(UIScrollView *)scrollView animated:(BOOL)animated {
-    _currentPageIndex = [self indexOfCurrentContentOffset];
-    CGFloat delta = scrollView.contentOffset.x - _currentPage.frame.origin.x + _currentPage.margin;
-    BOOL toggleNextItem = (fabs(delta) > scrollView.frame.size.width * 0.5);
-    if (toggleNextItem && [_visiblePages count] > 1) {
-        
-        NSInteger selectedIndex = [_visiblePages indexOfObject:_currentPage];
-        BOOL neighborExists = ((delta < 0 && selectedIndex > 0) || (delta > 0 && selectedIndex < [_visiblePages count]-1));
-        
-        if (neighborExists) {
-            NSInteger neighborPageVisibleIndex = [_visiblePages indexOfObject:_currentPage] + (delta > 0 ? 1 : -1);
-            NBSwipePageViewSheet *neighborPage = [_visiblePages objectAtIndex:neighborPageVisibleIndex];
-            NSInteger neighborIndex = _visibleRange.location + neighborPageVisibleIndex;
-            
-            [self updateScrolledPage:neighborPage index:neighborIndex animated:animated];
-        }
-    }
-}
-
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     [self updateVisiblePages];
     
@@ -709,14 +715,17 @@
         [_visiblePages enumerateObjectsUsingBlock:_visibleViewEffectBlock];
     }
     
-    if (_delegate && [_delegate respondsToSelector:@selector(swipePageViewDidScroll:)]) {
-        [_delegate swipePageViewDidScroll:self];
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewDidScroll:)]) {
+        [_delegate scrollViewDidScroll:scrollView];
     }
 }
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView {
     _scrollViewAnimating = NO;
     [self setCurrentPageIndexOfScrollView:scrollView animated:YES];
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewDidEndScrollingAnimation:)]) {
+        [_delegate scrollViewDidEndScrollingAnimation:scrollView];
+    }
 }
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
@@ -726,14 +735,38 @@
             _isPendingScrolledPageUpdateNotification = NO;
         }
     }
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewDidEndDragging:willDecelerate:)]) {
+        [_delegate scrollViewDidEndDragging:scrollView willDecelerate:decelerate];
+    }
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
     [self setCurrentPageIndexOfScrollView:scrollView animated:YES];
     _isPendingScrolledPageUpdateNotification = NO;
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewDidEndDecelerating:)]) {
+        [_delegate scrollViewDidEndDecelerating:scrollView];
+    }
 }
 
-#pragma make - Get some propeties of UIScrollView
+- (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewWillBeginDecelerating:)]) {
+        [_delegate scrollViewWillBeginDecelerating:scrollView];
+    }
+}
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewWillBeginDragging:)]) {
+        [_delegate scrollViewWillBeginDragging:scrollView];
+    }
+}
+
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
+    if (_delegate && [_delegate respondsToSelector:@selector(scrollViewWillEndDragging:withVelocity:targetContentOffset:)]) {
+        [_delegate scrollViewWillEndDragging:scrollView withVelocity:velocity targetContentOffset:targetContentOffset];
+    }
+}
+
+#pragma make - Get or Set some propeties of UIScrollView
 - (CGPoint)contentOffset {
     return _scrollView.contentOffset;
 }
@@ -752,6 +785,14 @@
 
 - (BOOL)decelerating {
     return _scrollView.decelerating;
+}
+
+- (UIEdgeInsets)contentInset {
+    return _scrollView.contentInset;
+}
+
+- (void)setContentInset:(UIEdgeInsets)contentInset {
+    _scrollView.contentInset = contentInset;
 }
 
 

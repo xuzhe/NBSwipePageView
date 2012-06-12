@@ -34,6 +34,7 @@ typedef enum {
 @property (unsafe_unretained, nonatomic) IBOutlet id<NBSwipePageViewDataSource> dataSource;
 
 @property (readonly, nonatomic) NSUInteger currentPageIndex;
+@property (assign, nonatomic) UIEdgeInsets contentInset;
 @property (assign, nonatomic) CGSize scaleScrollView;
 @property (assign, nonatomic) NBSwipePageViewMode pageViewMode;
 @property (assign, nonatomic) BOOL allowsSelection;
@@ -68,7 +69,7 @@ typedef enum {
 - (void)movePageAtIndex:(NSUInteger)fromIndex toIndex:(NSUInteger)toIndex;
 @end
 
-@protocol NBSwipePageViewDelegate <NSObject>
+@protocol NBSwipePageViewDelegate <NSObject, UIScrollViewDelegate>
 @optional
 // This delegate will be called after the user stoped the scroll.
 // The index should always equal to currentPage index.
@@ -83,9 +84,6 @@ typedef enum {
 
 // This delegate will be called after the user scrolled back to the page which just started the scroll.
 - (void)swipePageView:(NBSwipePageView *)swipePageView didCancelScrollFromPageAtIndex:(NSUInteger)index;
-
-// This delegate is called when the scrollView scrolled.
-- (void)swipePageViewDidScroll:(NBSwipePageView *)swipePageView;
 
 - (CGFloat)scaleOfSmallViewModeForSwipePageView:(NBSwipePageView *)swipePageView;  // default is 60%
 
