@@ -394,47 +394,32 @@
 }
 
 // Update Visible Pages
-- (void)updateVisiblePages {
-    CGFloat pageWidth = _scrollView.bounds.size.width;
+- (void)updateVisiblePages:(BOOL)force {
+    NSRange lastVisibleRange = _visibleRange;
+    [self updateVisibleRange:[self indexOfCurrentContentOffset]];
     
-	//get x origin of left- and right-most pages in _scrollView's superview coordinate space (i.e. self)  
-	CGFloat leftViewOriginX = _scrollView.frame.origin.x - _scrollView.contentOffset.x + (_visibleRange.location * pageWidth);
-	CGFloat rightViewOriginX = _scrollView.frame.origin.x - _scrollView.contentOffset.x + (_visibleRange.location + _visibleRange.length - 1.0) * pageWidth;
-	
-	if (leftViewOriginX > 0) {
-		//new page is entering the visible range from the left
-		if (_visibleRange.location > 0) { //is it not the first page?
-			_visibleRange.length += 1;
-			_visibleRange.location -= 1;
-			NBSwipePageViewSheet *page = [self loadPageAtIndex:_visibleRange.location insertIntoVisibleIndex:0];
+    if (NSEqualRanges(lastVisibleRange, _visibleRange) && !force) {
+        return;
+    }
+    
+    NSUInteger maxRange = NSMaxRange(lastVisibleRange);
+    for (NSUInteger i = maxRange - 1; i < maxRange && i >= lastVisibleRange.location; i--) {
+        if (!NSLocationInRange(i, _visibleRange)) {
+            NSUInteger ii = i - lastVisibleRange.location;
+            NBSwipePageViewSheet *page = [_visiblePages objectAtIndex:ii];
+            [page removeFromSuperview];
+            [self addToReusablePages:page];
+            [_visiblePages removeObjectAtIndex:ii];
+        }
+    }
+    BOOL initVisiblePages = ([_visiblePages count] == 0);
+    for (NSUInteger i = _visibleRange.location; i < NSMaxRange(_visibleRange); i++) {
+        if (initVisiblePages || !NSLocationInRange(i, lastVisibleRange)) {
+            NBSwipePageViewSheet *page = [self loadPageAtIndex:i insertIntoVisibleIndex:i - _visibleRange.location];
             // add the page to the scroll view (to make it actually visible)
-            [self addPageToScrollView:page atIndex:_visibleRange.location ];
-		}
-	} else if (leftViewOriginX < - pageWidth) {
-		//left page is exiting the visible range
-		NBSwipePageViewSheet *page = [_visiblePages objectAtIndex:0];
-        [_visiblePages removeObject:page];
-        [page removeFromSuperview]; //remove from the scroll view
-        [self addToReusablePages:page];
-		_visibleRange.location += 1;
-		_visibleRange.length -= 1;
-	}
-	if (rightViewOriginX > self.frame.size.width) {
-		//right page is exiting the visible range
-		NBSwipePageViewSheet *page = [_visiblePages lastObject];
-        [_visiblePages removeObject:page];
-        [page removeFromSuperview]; //remove from the scroll view
-        [self addToReusablePages:page];
-		_visibleRange.length -= 1;
-	} else if (rightViewOriginX + pageWidth < self.frame.size.width) {
-		//new page is entering the visible range from the right
-		if (_visibleRange.location + _visibleRange.length < _cachedNumberOfPages) { //is is not the last page?
-			_visibleRange.length += 1;
-            NSInteger index = _visibleRange.location+_visibleRange.length-1;
-			NBSwipePageViewSheet *page = [self loadPageAtIndex:index insertIntoVisibleIndex:_visibleRange.length-1];
-            [self addPageToScrollView:page atIndex:index];
-		}
-	}
+            [self addPageToScrollView:page atIndex:i];
+        }
+    }
 }
 
 - (void)updateScrolledPage:(NBSwipePageViewSheet *)page index:(NSUInteger)index animated:(BOOL)animated {
@@ -568,7 +553,7 @@
         _visibleRange.location = MIN(_currentPageIndex - 1, _cachedNumberOfPages - 1);
         _visibleRange.length = MIN(kMaxVisiblePageLength - 1, _cachedNumberOfPages);
     } else {
-        _visibleRange.location = _currentPageIndex - 1;
+        _visibleRange.location = currentIndex - 1;
         _visibleRange.length = MIN(MIN(kMaxVisiblePageLength, _cachedNumberOfPages), _cachedNumberOfPages - _visibleRange.location);
     }
 }
@@ -613,20 +598,11 @@
         return;
     }
     
-    [self updateVisibleRange:_currentPageIndex];
-    
-    // reload visible pages
-    for (NSUInteger i = 0; i <_visibleRange.length; i++) {
-        NBSwipePageViewSheet *page = [self loadPageAtIndex:_visibleRange.location + i insertIntoVisibleIndex:i];
-        [self addPageToScrollView:page atIndex:_visibleRange.location + i];
-    }
-    
     // this will load any additional views which become visible  
-    [self updateVisiblePages];
+    [self updateVisiblePages:YES];
 
-    _currentPage = [self swipePageViewSheetAtIndex:_currentPageIndex];
     // refresh the page at the selected index (it might have changed after reloading the visible pages) 
-    [self updateScrolledPage:_currentPage index:_currentPageIndex animated:NO];
+    [self updateScrolledPage:[self swipePageViewSheetAtIndex:_currentPageIndex] index:_currentPageIndex animated:NO];
     
     // reloading the data implicitely resets the viewMode to UIPageScrollViewModeDeck. 
     // here we restore the view mode in case this is not the first time reloadData is called (i.e. if there if a _selectedPage).   
@@ -640,7 +616,8 @@
 }
 
 - (void)scrollToPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
-    
+    [_scrollView setContentOffset:[self contentOffsetOfIndex:index] animated:animated];
+    [self updateScrolledPage:[self swipePageViewSheetAtIndex:index] index:index animated:animated];
 }
 
 - (NBSwipePageViewSheet *)swipePageViewSheetAtIndex:(NSUInteger)index {
@@ -666,7 +643,7 @@
         if (!_scrollViewAnimating) {
             _scrollViewAnimating = animated;
         }
-        [_scrollView setContentOffset:[self contentOffsetOfIndex:shouldSelectIndex] animated:animated];
+        [self scrollToPageAtIndex:shouldSelectIndex animated:animated];
     }
     [self delegateDidSelectPageAtIndex:shouldSelectIndex];
     _selectedPageIndex = shouldSelectIndex;
@@ -710,7 +687,7 @@
 #pragma mark - UIScrollViewDelegate
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    [self updateVisiblePages];
+    [self updateVisiblePages:NO];
     
     if (_pageViewMode == NBSwipePageViewModePageSize && _visibleViewEffectBlock) {
         [_visiblePages enumerateObjectsUsingBlock:_visibleViewEffectBlock];
