@@ -34,6 +34,7 @@ typedef enum {
 @property (unsafe_unretained, nonatomic) IBOutlet id<NBSwipePageViewDataSource> dataSource;
 
 @property (readonly, nonatomic) NSUInteger currentPageIndex;
+@property (readonly, nonatomic) BOOL isAnimating;
 @property (assign, nonatomic) CGSize scaleScrollView;
 @property (assign, nonatomic) NBSwipePageViewMode pageViewMode;
 @property (assign, nonatomic) BOOL allowsSelection;
