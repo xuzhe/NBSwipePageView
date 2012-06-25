@@ -630,9 +630,11 @@
         if (!_scrollViewAnimating) {
             _scrollViewAnimating = animated;
         }
+        [self delegateDidSelectPageAtIndex:shouldSelectIndex];  // should be called before currentIndex changed by scrollToPageAtIndex:
         [self scrollToPageAtIndex:shouldSelectIndex animated:animated];
+    } else {
+        [self delegateDidSelectPageAtIndex:shouldSelectIndex];
     }
-    [self delegateDidSelectPageAtIndex:shouldSelectIndex];
     _selectedPageIndex = shouldSelectIndex;
     return YES;
 }
