@@ -64,6 +64,10 @@ typedef enum {
 - (BOOL)selectPageAtIndex:(NSUInteger)index animated:(BOOL)animated scrollToMiddle:(BOOL)scrollToMiddle;
 - (BOOL)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated;
 
+// Pulished methods for fast offset and index convert
+- (NSUInteger)pageIndexOfCurrentOffset;
+- (CGPoint)contentOffsetOfIndex:(NSUInteger)index;
+
 // TODO: Edit the page view
 - (void)beginUpdates;
 - (void)endUpdates;
