@@ -538,7 +538,7 @@
 }
 
 - (void)updateVisibleRange:(NSUInteger)currentIndex {
-    if (currentIndex == NSNotFound || currentIndex == 0) {
+    if (currentIndex >= NSNotFound || currentIndex == 0) {
         _currentPageIndex = 0;
         _visibleRange.location = 0;
         _visibleRange.length = MIN(kMaxVisiblePageLength - 1, _cachedNumberOfPages);
@@ -579,7 +579,7 @@
 
     [self dataSourceLoadNumberOfPages];
     _selectedPageIndex = NSNotFound;
-    if (_cachedNumberOfPages == 0 || _cachedNumberOfPages == NSNotFound) {
+    if (_cachedNumberOfPages == 0 || _cachedNumberOfPages >= NSNotFound) {
         _currentPage = nil;
         _currentPageIndex = NSNotFound;
         return;
@@ -624,7 +624,7 @@
         return NO;
     }
     NSUInteger shouldSelectIndex = [self delegateWillSelectPageAtIndex:index];
-    if (shouldSelectIndex == NSNotFound) {
+    if (shouldSelectIndex >= NSNotFound) {
         return NO;
     } else if (shouldSelectIndex != _currentPageIndex && scrollToMiddle) {
         if (!_scrollViewAnimating) {
@@ -640,11 +640,11 @@
 }
 
 - (BOOL)deselectPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
-    if (index == NSNotFound) {
+    if (index >= NSNotFound) {
         return YES;
     }
     NSUInteger shouldDeselectIndex = [self delegateWillDeselectPageAtIndex:_selectedPageIndex];
-    if (shouldDeselectIndex == NSNotFound) {
+    if (shouldDeselectIndex >= NSNotFound) {
         return NO;
     }
     [self delegateDidDeselectPageAtIndex:_selectedPageIndex];
@@ -801,7 +801,7 @@
 }
 
 - (void)tapGestureHandler:(UITapGestureRecognizer *)recognizer  {
-    if (_currentPageIndex == NSNotFound) {
+    if (_currentPageIndex >= NSNotFound) {
         return;
     }
     if (recognizer.state == UIGestureRecognizerStateBegan) {
