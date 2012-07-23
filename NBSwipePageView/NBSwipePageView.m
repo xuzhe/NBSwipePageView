@@ -608,6 +608,10 @@
 }
 
 - (NBSwipePageViewSheet *)swipePageViewSheetAtIndex:(NSUInteger)index {
+    if (index >= _cachedNumberOfPages) {
+        // Out of bounds
+        return nil;
+    }
     if (NSLocationInRange(index, _visibleRange)) {
         return [_visiblePages objectAtIndex:index - _visibleRange.location];
     }
