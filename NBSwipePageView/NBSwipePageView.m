@@ -415,17 +415,19 @@
         return;
     }
     
-    NSUInteger maxRange = NSMaxRange(lastVisibleRange);
-    for (NSUInteger i = maxRange - 1; i < maxRange && i >= lastVisibleRange.location; i--) {
-        if (!NSLocationInRange(i, _visibleRange)) {
-            NSUInteger ii = i - lastVisibleRange.location;
-            NBSwipePageViewSheet *page = [_visiblePages objectAtIndex:ii];
-            [page removeFromSuperview];
-            [self addToReusablePages:page];
-            [_visiblePages removeObjectAtIndex:ii];
+    BOOL initVisiblePages = ([_visiblePages count] == 0);
+    if (!initVisiblePages) {
+        NSUInteger maxRange = NSMaxRange(lastVisibleRange);
+        for (NSUInteger i = maxRange - 1; i < maxRange && i >= lastVisibleRange.location; i--) {
+            if (!NSLocationInRange(i, _visibleRange)) {
+                NSUInteger ii = i - lastVisibleRange.location;
+                NBSwipePageViewSheet *page = [_visiblePages objectAtIndex:ii];
+                [page removeFromSuperview];
+                [self addToReusablePages:page];
+                [_visiblePages removeObjectAtIndex:ii];
+            }
         }
     }
-    BOOL initVisiblePages = ([_visiblePages count] == 0);
     for (NSUInteger i = _visibleRange.location; i < NSMaxRange(_visibleRange); i++) {
         if (initVisiblePages || !NSLocationInRange(i, lastVisibleRange)) {
             NBSwipePageViewSheet *page = [self loadPageAtIndex:i insertIntoVisibleIndex:i - _visibleRange.location];
