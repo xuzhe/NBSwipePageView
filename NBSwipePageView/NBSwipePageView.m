@@ -276,7 +276,9 @@
 }
 
 - (NBSwipePageViewSheet *)dataSourceSheetForPageAtIndex:(NSUInteger)index {
-    return [_dataSource swipePageView:self sheetForPageAtIndex:index];
+    NBSwipePageViewSheet *sheet = [_dataSource swipePageView:self sheetForPageAtIndex:index];
+    NSAssert(sheet != nil, @"The sheet for page at index: %d must not be nil", index);
+    return sheet;
 }
 
 // Option Datasource
