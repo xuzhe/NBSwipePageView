@@ -165,6 +165,7 @@
 - (void)setFrame:(CGRect)frame {
     [super setFrame:frame];
     [self updateContentSize];
+    [self relayoutVisiblePages];
 }
 
 #pragma mark - Delegate Sender
@@ -332,6 +333,7 @@
     frame.origin.y = floorf((self.bounds.size.height - frame.size.height) * 0.5);
     _scrollView.frame = frame;
     [self updateContentSize];
+    [self relayoutVisiblePages];
 }
 
 - (void)setFrameForPage:(NBSwipePageViewSheet *)page atIndex:(NSInteger)index {
@@ -347,7 +349,11 @@
 - (void)relayoutVisiblePages {
     for (NSUInteger i = 0; i < [_visiblePages count]; i++) {
         NBSwipePageViewSheet *sheet = [_visiblePages objectAtIndex:i];
-        
+        NSUInteger index = _visibleRange.location + i;
+        if (index >= _cachedNumberOfPages) {
+            continue;
+        }
+        [self setFrameForPage:sheet atIndex:index];
     }
 }
 
