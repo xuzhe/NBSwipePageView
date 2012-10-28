@@ -93,7 +93,6 @@
     // init settings
     _currentPageIndex = NSNotFound;
     _selectedPageIndex = NSNotFound;
-    _pageViewMode = NBSwipePageViewModePageSize;
     _allowsSelection = NO;
     _disableScrollInFullSizeMode = NO;  // defult is do NOT disable scroll in full size mode
     _isPendingScrolledPageUpdateNotification = NO;
@@ -115,10 +114,7 @@
     _scrollView.canCancelContentTouches = YES;
     [self addSubview:_scrollView];
     
-    _touchView = [[NBSwipePageTouchView alloc] initWithFrame:self.bounds];
-    _touchView.touchHandlerView = _scrollView;
-    _touchView.autoresizingMask = _scrollView.autoresizingMask;
-    [self addSubview:_touchView];
+    [self setPageViewMode:NBSwipePageViewModePageSize]; // default mode is page size
     
     // set tap gesture recognizer for page selection
 	UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGestureHandler:)];
@@ -169,6 +165,7 @@
 - (void)setFrame:(CGRect)frame {
     [super setFrame:frame];
     [self updateContentSize];
+    [self relayoutVisiblePages];
 }
 
 #pragma mark - Delegate Sender
@@ -276,7 +273,9 @@
 }
 
 - (NBSwipePageViewSheet *)dataSourceSheetForPageAtIndex:(NSUInteger)index {
-    return [_dataSource swipePageView:self sheetForPageAtIndex:index];
+    NBSwipePageViewSheet *sheet = [_dataSource swipePageView:self sheetForPageAtIndex:index];
+    NSAssert(sheet != nil, @"The sheet for page at index: %d must not be nil", index);
+    return sheet;
 }
 
 // Option Datasource
@@ -334,6 +333,7 @@
     frame.origin.y = floorf((self.bounds.size.height - frame.size.height) * 0.5);
     _scrollView.frame = frame;
     [self updateContentSize];
+    [self relayoutVisiblePages];
 }
 
 - (void)setFrameForPage:(NBSwipePageViewSheet *)page atIndex:(NSInteger)index {
@@ -344,6 +344,17 @@
 	frame.origin.x = floorf(contentOffset + margin);
 	page.frame = frame;
     page.margin = margin;
+}
+
+- (void)relayoutVisiblePages {
+    for (NSUInteger i = 0; i < [_visiblePages count]; i++) {
+        NBSwipePageViewSheet *sheet = [_visiblePages objectAtIndex:i];
+        NSUInteger index = _visibleRange.location + i;
+        if (index >= _cachedNumberOfPages) {
+            continue;
+        }
+        [self setFrameForPage:sheet atIndex:index];
+    }
 }
 
 - (void)shiftPage:(UIView*)page withOffset:(CGFloat)offset {
@@ -623,6 +634,19 @@
 
 - (void)setPageViewMode:(NBSwipePageViewMode)pageViewMode animated:(BOOL)animated {
     _pageViewMode = pageViewMode;
+    if (pageViewMode == NBSwipePageViewModeFullSize) {
+        if (_touchView) {
+            [_touchView removeFromSuperview];
+            _touchView = nil;
+        }
+    } else {
+        if (!_touchView) {
+            _touchView = [[NBSwipePageTouchView alloc] initWithFrame:self.bounds];
+            _touchView.touchHandlerView = _scrollView;
+            _touchView.autoresizingMask = _scrollView.autoresizingMask;
+            [self addSubview:_touchView];
+        }
+    }
     // TODO: add animated support
 }
 
