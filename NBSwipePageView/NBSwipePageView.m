@@ -478,6 +478,7 @@
     }
     _backgroundView = backgroundView;
     if (backgroundView) {
+        backgroundView.frame = self.bounds;
         backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;   // should always autoresize background view
         [self insertSubview:backgroundView atIndex:0];
     }
