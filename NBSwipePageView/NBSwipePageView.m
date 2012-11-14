@@ -348,7 +348,7 @@
 
 - (void)relayoutVisiblePages {
     for (NSUInteger i = 0; i < [_visiblePages count]; i++) {
-        NBSwipePageViewSheet *sheet = [_visiblePages objectAtIndex:i];
+        NBSwipePageViewSheet *sheet = _visiblePages[i];
         NSUInteger index = _visibleRange.location + i;
         if (index >= _cachedNumberOfPages) {
             continue;
@@ -405,7 +405,7 @@
 }
 
 - (void)addToReusablePages:(NBSwipePageViewSheet *)page {
-    NSMutableSet *set = [_reusablePages objectForKey:page.reuseIdentifier];
+    NSMutableSet *set = _reusablePages[page.reuseIdentifier];
     if (set) {
         // if already have one reusable page, do not add another one.
         if ([set count] == 0) {
@@ -413,7 +413,7 @@
         }
     } else {
         set = [NSMutableSet setWithObject:page];
-        [_reusablePages setObject:set forKey:page.reuseIdentifier];
+        _reusablePages[page.reuseIdentifier] = set;
     }
 }
 
@@ -432,7 +432,7 @@
         for (NSUInteger i = maxRange - 1; i < maxRange && i >= lastVisibleRange.location; i--) {
             if (!NSLocationInRange(i, _visibleRange)) {
                 NSUInteger ii = i - lastVisibleRange.location;
-                NBSwipePageViewSheet *page = [_visiblePages objectAtIndex:ii];
+                NBSwipePageViewSheet *page = _visiblePages[ii];
                 [page removeFromSuperview];
                 [self addToReusablePages:page];
                 [_visiblePages removeObjectAtIndex:ii];
@@ -541,7 +541,7 @@
 
 #pragma mark - Public Methods
 - (NBSwipePageViewSheet *)dequeueReusableCellWithIdentifier:(NSString *)reuseIdentifier {
-    NSMutableSet *reusableSet = [_reusablePages objectForKey:reuseIdentifier];
+    NSMutableSet *reusableSet = _reusablePages[reuseIdentifier];
     NBSwipePageViewSheet *reusableSheet = [reusableSet anyObject];
     if (reusableSheet) {
         [reusableSheet prepareForReuse];
@@ -627,7 +627,7 @@
         return nil;
     }
     if (NSLocationInRange(index, _visibleRange)) {
-        return [_visiblePages objectAtIndex:index - _visibleRange.location];
+        return _visiblePages[index - _visibleRange.location];
     }
     return [self dataSourceSheetForPageAtIndex:index];
 }
