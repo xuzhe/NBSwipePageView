@@ -618,7 +618,11 @@
 
 - (void)scrollToPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
     [_scrollView setContentOffset:[self contentOffsetOfIndex:index] animated:animated];
-    [self updateScrolledPageIndex:index animated:animated];
+    if (!animated) {
+        // do not call this method when animated,
+        // because it will be called in UIScrollViewDelegate.
+        [self updateScrolledPageIndex:index animated:animated];
+    }
 }
 
 - (NBSwipePageViewSheet *)swipePageViewSheetAtIndex:(NSUInteger)index {
