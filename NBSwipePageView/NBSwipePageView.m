@@ -16,7 +16,6 @@
 @end
 
 @implementation NBSwipePageTouchView
-@synthesize touchHandlerView = _touchHandlerView;
 
 - (void)initCodes {
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -73,20 +72,6 @@
     CGFloat _cachedScaleRate;
     NSUInteger _selectedPageIndex;
 }
-
-@synthesize delegate = _delegate;
-@synthesize dataSource = _dataSource;
-@synthesize currentPageIndex = _currentPageIndex;
-@synthesize pageViewMode = _pageViewMode;
-@synthesize pageHeaderView = _pageHeaderView;
-@synthesize pageTailView = _pageTailView;
-@synthesize pageTitleView = _pageTitleView;
-@synthesize backgroundView = _backgroundView;
-@synthesize allowsSelection = _allowsSelection;
-@synthesize disableScrollInFullSizeMode = _disableScrollInFullSizeMode;
-@synthesize visibleViewEffectBlock = _visibleViewEffectBlock;
-@synthesize scaleScrollView = _scaleScrollView;
-@synthesize isAnimating = _scrollViewAnimating;
 
 #pragma mark - Init Codes
 - (void)initCodes {
@@ -617,7 +602,7 @@
 }
 
 - (void)scrollToPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
-    _scrollViewAnimating = animated;
+    _isAnimating = animated;
     [_scrollView setContentOffset:[self contentOffsetOfIndex:index] animated:animated];
     if (!animated) {
         // do not call this method when animated,
@@ -721,7 +706,7 @@
 }
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView {
-    _scrollViewAnimating = NO;
+    _isAnimating = NO;
     [self updateScrolledPageIndex:[self pageIndexOfCurrentOffset] animated:YES];
     if (_delegate && [_delegate respondsToSelector:@selector(scrollViewDidEndScrollingAnimation:)]) {
         [_delegate scrollViewDidEndScrollingAnimation:scrollView];
@@ -823,11 +808,15 @@
     _scrollView.scrollEnabled = scrollEnabled;
 }
 
+- (NSArray *)visiblePages {
+    return [NSArray arrayWithArray:_visiblePages];
+}
+
 #pragma mark -
 #pragma mark Handling Touches
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
-	if (_pageViewMode == NBSwipePageViewModePageSize && !_scrollView.decelerating && !_scrollView.dragging && !_scrollViewAnimating) {
+	if (_pageViewMode == NBSwipePageViewModePageSize && !_scrollView.decelerating && !_scrollView.dragging && !_isAnimating) {
 		return YES;	
 	}
 	return NO;	

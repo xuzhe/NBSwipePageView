@@ -44,6 +44,7 @@ typedef enum {
 @property (strong, nonatomic) UIView *backgroundView;
 @property (strong, nonatomic) UIView *pageTitleView;
 @property (strong, nonatomic) void (^visibleViewEffectBlock)(id obj, NSUInteger idx, BOOL *stop);
+@property (readonly, nonatomic) NSArray *visiblePages;
 
 // UIScrollViews's property
 @property (assign, nonatomic) UIEdgeInsets contentInset;
