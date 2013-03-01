@@ -617,6 +617,7 @@
 }
 
 - (void)scrollToPageAtIndex:(NSUInteger)index animated:(BOOL)animated {
+    _scrollViewAnimating = animated;
     [_scrollView setContentOffset:[self contentOffsetOfIndex:index] animated:animated];
     if (!animated) {
         // do not call this method when animated,
@@ -662,9 +663,6 @@
     if (shouldSelectIndex >= NSNotFound) {
         return NO;
     } else if (shouldSelectIndex != _currentPageIndex && scrollToMiddle) {
-        if (!_scrollViewAnimating) {
-            _scrollViewAnimating = animated;
-        }
         [self delegateDidSelectPageAtIndex:shouldSelectIndex];  // should be called before currentIndex changed by scrollToPageAtIndex:
         [self scrollToPageAtIndex:shouldSelectIndex animated:animated];
     } else {
@@ -732,10 +730,10 @@
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
     if (!decelerate) {
-        [self updateScrolledPageIndex:[self pageIndexOfCurrentOffset] animated:YES];
+        [self updateScrolledPageIndex:[self pageIndexOfCurrentOffset] animated:NO];
         if (_isPendingScrolledPageUpdateNotification) {
             _isPendingScrolledPageUpdateNotification = NO;
-            [self delegateDidScrollToPageAtIndex:_currentPageIndex animated:YES];
+            [self delegateDidScrollToPageAtIndex:_currentPageIndex animated:NO];
         }
     }
     if (_delegate && [_delegate respondsToSelector:@selector(scrollViewDidEndDragging:willDecelerate:)]) {
