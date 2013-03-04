@@ -48,7 +48,8 @@
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
 	if (_touchHandlerView && [self pointInside:point withEvent:event]) {
-		return _touchHandlerView;
+        UIView *test = [_touchHandlerView hitTest:[self convertPoint:point toView:_touchHandlerView] withEvent:event];
+		return test == nil ? _touchHandlerView : test;
 	}
 	return nil;
 }
