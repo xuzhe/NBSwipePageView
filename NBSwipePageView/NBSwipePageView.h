@@ -47,6 +47,7 @@ typedef enum {
 @property (readonly, nonatomic) NSArray *visiblePages;
 
 // UIScrollViews's property
+@property (assign, nonatomic) BOOL delaysContentTouches;
 @property (assign, nonatomic) UIEdgeInsets contentInset;
 @property (assign, nonatomic) CGPoint contentOffset;
 @property (assign, nonatomic) CGSize contentSize;

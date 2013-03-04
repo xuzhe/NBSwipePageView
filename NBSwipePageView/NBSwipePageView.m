@@ -789,6 +789,10 @@
     return _scrollView.scrollEnabled;
 }
 
+- (BOOL)delaysContentTouches {
+    return _scrollView.delaysContentTouches;
+}
+
 - (void)setContentInset:(UIEdgeInsets)contentInset {
     _scrollView.contentInset = contentInset;
 }
@@ -807,6 +811,10 @@
 
 - (void)setScrollEnabled:(BOOL)scrollEnabled {
     _scrollView.scrollEnabled = scrollEnabled;
+}
+
+- (void)setDelaysContentTouches:(BOOL)delaysContentTouches {
+    _scrollView.delaysContentTouches = delaysContentTouches;
 }
 
 - (NSArray *)visiblePages {
