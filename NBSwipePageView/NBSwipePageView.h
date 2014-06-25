@@ -35,6 +35,7 @@ typedef enum {
 
 @property (readonly, nonatomic) NSUInteger currentPageIndex;
 @property (readonly, nonatomic) BOOL isAnimating;
+@property (readonly, nonatomic) UIScrollView *scrollView;
 @property (assign, nonatomic) CGSize scaleScrollView;
 @property (assign, nonatomic) NBSwipePageViewMode pageViewMode;
 @property (assign, nonatomic) BOOL allowsSelection;

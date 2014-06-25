@@ -62,7 +62,6 @@
 @end
 
 @implementation NBSwipePageView {
-    UIScrollView *_scrollView;
     NBSwipePageTouchView *_touchView;
     NBSwipePageViewSheet *_currentPage;
     NSMutableArray *_visiblePages;
