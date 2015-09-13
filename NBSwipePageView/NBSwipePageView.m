@@ -586,11 +586,9 @@
     
     // this will load any additional views which become visible  
     [self updateVisiblePages:YES];
-
-    // refresh the page at the selected index (it might have changed after reloading the visible pages) 
-    [self updateScrolledPageIndex:_currentPageIndex animated:NO];
+    _currentPage = [self swipePageViewSheetAtIndex:_currentPageIndex];
     
-    // reloading the data implicitely resets the viewMode to UIPageScrollViewModeDeck. 
+    // reloading the data implicitely resets the viewMode to UIPageScrollViewModeDeck.
     // here we restore the view mode in case this is not the first time reloadData is called (i.e. if there if a _selectedPage).   
 //    if (_selectedPage && _viewMode==HGPageScrollViewModePage) { 
 //        _viewMode = HGPageScrollViewModeDeck;
